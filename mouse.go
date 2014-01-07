@@ -12,10 +12,69 @@ type Menu struct {
 	// ???
 }
 
+// Mouse is a record of one event from /dev/mouse.
 type Mouse struct {
 	buttons int
 	xy      image.Point
 	msec    uint
+}
+
+func (m Mouse) String() string {
+	out := ""
+
+	switch m.buttons {
+	case 1:
+		out += "Mb1"
+	case 2:
+		out += "Mb2"
+	case 4:
+		out += "Mb3"
+	case 8:
+		out += "SUp"
+	case 16:
+		out += "SDn"
+	default:
+		out += "nil"
+	}
+
+	out += fmt.Sprintf(" %s %d", m.xy, m.msec)
+
+	return out
+}
+
+// Mb1 returns true if the left mouse button was pressed.
+func (m *Mouse) Mb1() bool {
+	return m.buttons == 1
+}
+
+// Mb2 returns true if the middle mouse button was pressed.
+func (m *Mouse) Mb2() bool {
+	return m.buttons == 2
+}
+
+// Mb3 returns true if the right mouse button was pressed.
+func (m *Mouse) Mb3() bool {
+	return m.buttons == 4
+}
+
+// ScrollUp returns true if the scroll wheel went up.
+func (m *Mouse) ScrollUp() bool {
+	return m.buttons == 8
+}
+
+// ScrollDown returns true if the scroll wheel went down.
+func (m *Mouse) ScrollDown() bool {
+	return m.buttons == 16
+}
+
+// Pt returns the point on the window at which the event happened.
+func (m *Mouse) Pt() image.Point {
+	return m.xy
+}
+
+// Ms returns the millisecond timestamp of the Mouse event.
+func (m *Mouse) Ms() uint {
+	return m.msec
 }
 
 type Mousectl struct {
