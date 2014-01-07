@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
-	"syscall"
 	"strings"
+	"syscall"
 )
 
 var (
@@ -78,7 +78,7 @@ func initdisplay(devdir, windir string) (*Display, error) {
 	info = make([]byte, 12*12)
 
 	d := &Display{
-//		debug: true,
+		//debug: true,
 		devdir: devdir,
 		windir: windir,
 	}
@@ -121,7 +121,7 @@ func initdisplay(devdir, windir string) (*Display, error) {
 	pix, _ := ParsePix(strings.TrimSpace(string(info[2*12 : 3*12])))
 
 	if d.debug {
-	fmt.Fprintf(os.Stderr, "display pix: %s %v\n", pix, pix.Depth())
+		fmt.Fprintf(os.Stderr, "display pix: %s %v\n", pix, pix.Depth())
 	}
 
 	if n >= nINFO {
@@ -166,6 +166,13 @@ func initdisplay(devdir, windir string) (*Display, error) {
 	return d, nil
 }
 
+// Called when a resize happens, equivalent to getwindow in draw(2)
+func (d *Display) Attach(ref int) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.getwindow(ref)
+}
+
 func (d *Display) getwindow(ref int) error {
 	winname := fmt.Sprintf("%s/winname", d.windir)
 	return gengetwindow(d, winname, ref)
@@ -197,6 +204,13 @@ retry:
 			}
 
 			fmt.Fprintf(os.Stderr, "namedimage %s failed: %s\n", buf, err)
+		}
+
+		if d.ScreenImage != nil {
+			d.ScreenImage.free()
+			d.Screen.Image.free()
+			d.Screen.free()
+			d.Screen = nil
 		}
 
 		if i == nil {
