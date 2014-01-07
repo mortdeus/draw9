@@ -1,6 +1,7 @@
 package draw9
 
 import (
+	"image"
 	"testing"
 	"time"
 )
@@ -14,6 +15,8 @@ func TestInitDraw(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	img := disp.ScreenImage
+
 	//defer disp.Close()
 
 	kbd := InitKeyboard("")
@@ -26,10 +29,25 @@ loop:
 	for {
 		select {
 		case r := <-kbd.C:
+			// keyboard char
 			t.Logf("kbd: %c", r)
 		case m := <-ms.C:
-			t.Logf("ms: %+v", m)
-		case <-time.After(1 * time.Second):
+			// mouse move
+			t.Logf("ms: %s", m)
+			pt := m.Pt()
+			img.Draw(image.Rect(pt.X-5, pt.Y-5, pt.X+5, pt.Y+5), disp.Black, nil, image.ZP)
+			disp.Flush()
+		case <-ms.Resize:
+			// resized
+			if err := disp.Attach(Refmesg); err != nil {
+				t.Errorf("attach: %s", err)
+				break loop
+			}
+			img = disp.ScreenImage
+			img.Draw(disp.ScreenImage.R, disp.White, nil, image.ZP)
+			disp.Flush()
+		case <-time.After(5 * time.Second):
+			// timeout, die
 			t.Logf("timeout")
 			break loop
 		}

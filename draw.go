@@ -87,4 +87,3 @@ func GenDrawOp(dst *Image, r image.Rectangle, src *Image, p0 image.Point, mask *
 	defer dst.Display.mu.Unlock()
 	draw(dst, r, src, p0, mask, p1, op)
 }
-
