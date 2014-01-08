@@ -25,10 +25,10 @@ func InitDraw(errch chan<- error, fontname, label string) (*Display, error) {
 		}
 	}
 
-	return geninitdraw(dev, label, dev, Refnone)
+	return geninitdraw(dev, dev, label, Refnone)
 }
 
-func geninitdraw(devdir, label, windir string, ref int) (*Display, error) {
+func geninitdraw(devdir, windir, label string, ref int) (*Display, error) {
 	var err error
 	var buf string
 
@@ -40,7 +40,7 @@ func geninitdraw(devdir, label, windir string, ref int) (*Display, error) {
 	if label != "" {
 		buf = MainDisplay.windir + "/label"
 		if fd, err := os.Open(buf); err == nil {
-			var old []byte
+			old := make([]byte, 64)
 			io.ReadFull(fd, old)
 			MainDisplay.oldlabel = string(old)
 			fd.Close()

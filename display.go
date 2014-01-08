@@ -61,7 +61,7 @@ func (d *Display) Close() error {
 
 func (d *Display) close() error {
 	if d.oldlabel != "" {
-		if f, err := os.OpenFile(d.windir+"/label", os.O_RDWR, 0666); err != nil {
+		if f, err := os.OpenFile(d.windir+"/label", os.O_WRONLY, 0); err == nil {
 			io.WriteString(f, d.oldlabel)
 			f.Close()
 		}
