@@ -3,6 +3,7 @@ package draw9
 import (
 	"image"
 	"testing"
+	"time"
 )
 
 // try me!
@@ -25,10 +26,13 @@ func TestInitDraw(t *testing.T) {
 	//defer ms.Close()
 
 	//var pix []image.Point
+	timeout := time.After(9 * time.Minute)
 
 loop:
 	for {
 		select {
+		case <-timeout:
+			break loop
 		case r := <-kbd.C:
 			// keyboard char
 			t.Logf("kbd: %c", r)
@@ -49,7 +53,7 @@ loop:
 					if newpt == pt {
 						continue
 					}
-					img.Line(pt, newpt, 0, 0, 3, disp.Black, image.ZP)
+					img.Line(pt, newpt, 1, 1, 3, disp.Black, image.ZP)
 					disp.Flush()
 					pt = newpt
 				}

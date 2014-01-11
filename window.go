@@ -1,6 +1,7 @@
 package draw9
 
 import (
+	"bitbucket.org/mischief/draw9/color9"
 	"fmt"
 	"image"
 )
@@ -55,7 +56,7 @@ func (i *Image) allocScreen(fill *Image, public bool) (*Screen, error) {
 	return s, nil
 }
 
-func allocwindow(i *Image, s *Screen, r image.Rectangle, ref int, val Color) (*Image, error) {
+func allocwindow(i *Image, s *Screen, r image.Rectangle, ref int, val color9.Color) (*Image, error) {
 	d := s.Display
 	i, err := allocImage(d, i, r, d.ScreenImage.Pix, false, val, s.ID, ref)
 	if err != nil {
@@ -66,5 +67,3 @@ func allocwindow(i *Image, s *Screen, r image.Rectangle, ref int, val Color) (*I
 	s.Display.Windows = i
 	return i, nil
 }
-
-

@@ -1,4 +1,4 @@
-package draw9
+package color9
 
 import (
 	"fmt"
@@ -141,4 +141,3 @@ func (p Pix) Depth() int {
 	}
 	return n
 }
-

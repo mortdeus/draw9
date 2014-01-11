@@ -3,8 +3,8 @@ package draw9
 // various bitpacking and decoding functions
 
 import (
-	"image"
 	"encoding/binary"
+	"image"
 )
 
 func atoi(b []byte) int {
@@ -34,4 +34,3 @@ func bplong(b []byte, n uint32) {
 func bpshort(b []byte, n uint16) {
 	binary.LittleEndian.PutUint16(b, n)
 }
-

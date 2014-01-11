@@ -30,4 +30,3 @@ func (dst *Image) lineOp(p0, p1 image.Point, end0, end1, radius int, src *Image,
 	bplong(a[37:], uint32(sp.X))
 	bplong(a[41:], uint32(sp.Y))
 }
-

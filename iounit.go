@@ -3,8 +3,8 @@ package draw9
 import (
 	"fmt"
 	"io/ioutil"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 // return size of atomic I/O unit for file descriptor

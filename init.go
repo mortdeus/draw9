@@ -1,6 +1,7 @@
 package draw9
 
 import (
+	"bitbucket.org/mischief/draw9/color9"
 	"bytes"
 	"fmt"
 	"image"
@@ -10,11 +11,11 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"log"
 )
 
-var (
-	MainDisplay *Display
-	MainScreen  *Screen
+const (
+	deffontname = "*default*"
 )
 
 func InitDraw(errch chan<- error, fontname, label string) (*Display, error) {
@@ -25,24 +26,58 @@ func InitDraw(errch chan<- error, fontname, label string) (*Display, error) {
 		}
 	}
 
-	return geninitdraw(dev, dev, label, Refnone)
+	return geninitdraw(dev, dev, fontname, label, Refnone)
 }
 
-func geninitdraw(devdir, windir, label string, ref int) (*Display, error) {
-	var err error
+func geninitdraw(devdir, windir, fontname, label string, ref int) (d *Display, err error) {
 	var buf string
 
-	MainDisplay, err = initdisplay(devdir, windir)
+	d, err = initdisplay(devdir, windir)
 	if err != nil {
 		return nil, fmt.Errorf("initdisplay: %s", err)
 	}
 
+	/* default font */
+	df, err := getdefont(d)
+	if err != nil {
+		return nil, err
+	}
+	d.DefaultSubfont = df
+
+	if d.debug {
+		log.Printf("loaded %s", df)
+	}
+
+	if fontname == "" {
+		fontname = os.Getenv("font")
+	}
+
+	var font *Font
+
+	if fontname == "" {
+		buf := []byte(fmt.Sprintf("%d %d\n0 %d\t%s\n", df.Height, df.Ascent,
+			df.N-1, deffontname))
+		font, err = d.buildFont(buf, deffontname)
+	} else {
+		font, err = d.openFont(fontname)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("can't open default font %s: %s", font, err)
+	}
+
+	if d.debug {
+		log.Printf("loaded %s", font)
+	}
+
+	d.DefaultFont = font
+
 	if label != "" {
-		buf = MainDisplay.windir + "/label"
+		buf = d.windir + "/label"
 		if fd, err := os.Open(buf); err == nil {
 			old := make([]byte, 64)
 			io.ReadFull(fd, old)
-			MainDisplay.oldlabel = string(old)
+			d.oldlabel = string(old)
 			fd.Close()
 			if fd, err = os.Create(buf); err == nil {
 				io.WriteString(fd, label)
@@ -51,15 +86,13 @@ func geninitdraw(devdir, windir, label string, ref int) (*Display, error) {
 		}
 	}
 
-	buf = MainDisplay.windir + "/winname"
-	return MainDisplay, gengetwindow(MainDisplay, buf, ref)
+	buf = d.windir + "/winname"
+	return d, gengetwindow(d, buf, ref)
 }
 
-var (
+const (
 	nINFO = 12 * 12
 )
-
-// fmt.Fprintf(os.Stderr, "foo")
 
 /* TODO: setup err chan */
 func initdisplay(devdir, windir string) (*Display, error) {
@@ -78,7 +111,7 @@ func initdisplay(devdir, windir string) (*Display, error) {
 	info = make([]byte, 12*12)
 
 	d := &Display{
-		//debug: true,
+//		debug: true,
 		devdir: devdir,
 		windir: windir,
 	}
@@ -118,7 +151,7 @@ func initdisplay(devdir, windir string) (*Display, error) {
 
 	i := &Image{}
 
-	pix, _ := ParsePix(strings.TrimSpace(string(info[2*12 : 3*12])))
+	pix, _ := color9.ParsePix(strings.TrimSpace(string(info[2*12 : 3*12])))
 
 	if d.debug {
 		fmt.Fprintf(os.Stderr, "display pix: %s %v\n", pix, pix.Depth())
@@ -152,12 +185,12 @@ func initdisplay(devdir, windir string) (*Display, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if d.White, err = d.allocImage(image.Rect(0, 0, 1, 1), GREY1, true, DWhite); err != nil {
-		panic("can't allocate colors")
+	if d.White, err = d.allocImage(image.Rect(0, 0, 1, 1), color9.GREY1, true, color9.DWhite); err != nil {
+		return nil, fmt.Errorf("can't allocate white: %s", err)
 	}
 
-	if d.Black, err = d.allocImage(image.Rect(0, 0, 1, 1), GREY1, true, DBlack); err != nil {
-		panic("can't allocate colors")
+	if d.Black, err = d.allocImage(image.Rect(0, 0, 1, 1), color9.GREY1, true, color9.DBlack); err != nil {
+		return nil, fmt.Errorf("can't allocate black: %s", err)
 	}
 
 	d.Opaque = d.White
@@ -230,7 +263,7 @@ retry:
 	}
 
 	d.ScreenImage = d.Image
-	d.ScreenImage, err = allocwindow(nil, d.Screen, r, 0, DWhite)
+	d.ScreenImage, err = allocwindow(nil, d.Screen, r, 0, color9.DWhite)
 	if err != nil {
 		return err
 	}

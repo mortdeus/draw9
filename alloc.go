@@ -1,24 +1,48 @@
 package draw9
 
 import (
+	"bitbucket.org/mischief/draw9/color9"
+	"bitbucket.org/mischief/draw9/image9"
+	"bytes"
 	"fmt"
 	"image"
 	"runtime"
 )
 
+// LoadImage loads an image.Image onto the Display, and returns a handle to the Image.
+func (d *Display) LoadImage(load image.Image) (i *Image, err error) {
+	i, err = d.AllocImage(load.Bounds(), color9.RGBA32, false, 0)
+
+	if err != nil {
+		return nil, err
+	}
+
+	img9buf := new(bytes.Buffer)
+
+	if err = image9.Encode(img9buf, load); err != nil {
+		return nil, err
+	}
+
+	if _, err = i.Load(load.Bounds(), img9buf.Bytes()[60:]); err != nil {
+		return nil, err
+	}
+
+	return i, nil
+}
+
 // AllocImage allocates a new Image on display d.
-func (d *Display) AllocImage(r image.Rectangle, pix Pix, repl bool, val Color) (*Image, error) {
+func (d *Display) AllocImage(r image.Rectangle, pix color9.Pix, repl bool, val color9.Color) (*Image, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return allocImage(d, nil, r, pix, repl, val, 0, 0)
 }
 
-func (d *Display) allocImage(r image.Rectangle, pix Pix, repl bool, val Color) (i *Image, err error) {
+func (d *Display) allocImage(r image.Rectangle, pix color9.Pix, repl bool, val color9.Color) (i *Image, err error) {
 	return allocImage(d, nil, r, pix, repl, val, 0, 0)
 }
 
 // implements message 'b'
-func allocImage(d *Display, ai *Image, r image.Rectangle, pix Pix, repl bool, val Color, screenid uint32, refresh int) (i *Image, err error) {
+func allocImage(d *Display, ai *Image, r image.Rectangle, pix color9.Pix, repl bool, val color9.Color, screenid uint32, refresh int) (i *Image, err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("allocimage %v %v: %v", r, pix, err)
@@ -84,7 +108,7 @@ func allocImage(d *Display, ai *Image, r image.Rectangle, pix Pix, repl bool, va
 	return i, nil
 }
 
-func (d *Display) AllocImageMix(color1, color3 Color) *Image {
+func (d *Display) AllocImageMix(color1, color3 color9.Color) *Image {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if d.ScreenImage.Depth <= 8 { // create a 2x2 texture
@@ -97,7 +121,7 @@ func (d *Display) AllocImageMix(color1, color3 Color) *Image {
 
 	// use a solid color, blended using alpha
 	if d.qmask == nil {
-		d.qmask, _ = d.allocImage(image.Rect(0, 0, 1, 1), GREY8, true, 0x3F3F3FFF)
+		d.qmask, _ = d.allocImage(image.Rect(0, 0, 1, 1), color9.GREY8, true, 0x3F3F3FFF)
 	}
 	t, _ := d.allocImage(image.Rect(0, 0, 1, 1), d.ScreenImage.Pix, true, color1)
 	b, _ := d.allocImage(image.Rect(0, 0, 1, 1), d.ScreenImage.Pix, true, color3)
@@ -125,7 +149,7 @@ func (d *Display) namedimage(name []byte) (*Image, error) {
 		return nil, fmt.Errorf("namedimage: %s", err)
 	}
 
-	pix, _ := ParsePix(string(ctlbuf[2*12 : 3*12]))
+	pix, _ := color9.ParsePix(string(ctlbuf[2*12 : 3*12]))
 	image := &Image{
 		Display: d,
 		ID:      id,
