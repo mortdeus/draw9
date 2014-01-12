@@ -49,7 +49,8 @@ func geninitdraw(devdir, windir, fontname, label string, ref int) (d *Display, e
 	}
 
 	if fontname == "" {
-		fontname = os.Getenv("font")
+		fname, _ := ioutil.ReadFile("/env/font") // os.Getenv("font")
+		fontname = string(fname)
 	}
 
 	var font *Font
@@ -111,7 +112,7 @@ func initdisplay(devdir, windir string) (*Display, error) {
 	info = make([]byte, 12*12)
 
 	d := &Display{
-//		debug: true,
+		debug: true,
 		devdir: devdir,
 		windir: windir,
 	}
