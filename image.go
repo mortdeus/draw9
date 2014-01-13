@@ -4,7 +4,6 @@ import (
 	"bitbucket.org/mischief/draw9/color9"
 	"image"
 	"image/color"
-	"log"
 	"runtime"
 )
 
