@@ -93,8 +93,8 @@ type CMap8 struct {
 }
 
 func (c CMap8) RGBA() (r, g, b, a uint32) {
-	ri, gi, bi := Cmap2rgb(int(c.I))
-	return uint32(ri), uint32(gi), uint32(bi), 0xffff
+	ri, gi, bi := Cmap2rgb(uint32(c.I))
+	return ri, gi, bi, 0xffff
 }
 
 func cmapModel(c color.Color) color.Color {
@@ -103,11 +103,11 @@ func cmapModel(c color.Color) color.Color {
 	}
 	r32, g32, b32, a32 := c.RGBA()
 	// Move to closest color.
-	index := Rgb2cmap(int(r32), int(g32), int(b32))
+	index := Rgb2cmap(r32, g32, b32)
 	r, g, b := Cmap2rgb(index)
 	// Lift alpha if necessary to keep premultiplication invariant.
 	// The color is still in the map (there's no alpha in CMAP8).
-	a := int(a32)
+	a := a32
 	if a < r {
 		a = r
 	}

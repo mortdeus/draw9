@@ -41,10 +41,10 @@ rgb2cmap(int cr, int cg, int cb)
 }
 */
 
-func Rgb2cmap(cr, cg, cb int) int {
-	best := 0
-	bestsq := 0x7FFFFFFF
-	for i := 0; i < 256; i++ {
+func Rgb2cmap(cr, cg, cb uint32) uint32 {
+	best := uint32(0)
+	bestsq := uint32(0x7FFFFFFF)
+	for i := uint32(0); i < 256; i++ {
 		r, g, b := Cmap2rgb(i)
 		sq := (r-cr)*(r-cr) + (g-cg)*(g-cg) + (b-cb)*(b-cb)
 		if sq < bestsq {
@@ -55,7 +55,7 @@ func Rgb2cmap(cr, cg, cb int) int {
 	return best
 }
 
-func Cmap2rgb(c int) (r, g, b int) {
+func Cmap2rgb(c uint32) (r, g, b uint32) {
 	r = c >> 6
 	v := (c >> 4) & 3
 	j := (c - v + r) & 15
@@ -79,7 +79,7 @@ func Cmap2rgb(c int) (r, g, b int) {
 	return
 }
 
-func cmap2rgba(c int) Color {
+func cmap2rgba(c uint32) Color {
 	r, g, b := Cmap2rgb(c)
 	return Color(r<<24 | g<<16 | b<<8 | 0xFF)
 }
