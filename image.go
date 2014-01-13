@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/mischief/draw9/color9"
 	"image"
 	"image/color"
+	"log"
 	"runtime"
 )
 
@@ -173,4 +174,28 @@ func (i *Image) At(x, y int) color.Color {
 
 func (i *Image) Bounds() image.Rectangle {
 	return i.Clipr
+}
+
+// Set implements the image/draw.Image interface.
+// It can change a single pixel in an Image.
+// The coordinates x and y are relative to the Image's upper left pixel.
+// The color.Color will be converted to the Image's color space.
+func (i *Image) Set(x, y int, c color.Color) {
+	pt := image.Pt(x, y)
+
+	model := i.ColorModel()
+
+	convc := model.Convert(c)
+
+	r, g, b, _ := convc.RGBA()
+
+	colr := color9.Color((r << 24) | (g << 16) | (b << 8) | 0xFF)
+
+	img, err := i.Display.AllocImage(image.Rect(0, 0, 1, 1), i.Pix, true, colr)
+
+	if err != nil {
+		panic(err)
+	}
+
+	i.Draw(image.Rect(pt.X, pt.Y, pt.X+1, pt.Y+1), img, nil, image.ZP)
 }
