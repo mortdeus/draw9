@@ -22,7 +22,7 @@ func main() {
 	}
 
 	screen := disp.ScreenImage
-	kbd := draw9.InitKeyboard("")
+	kbd := draw9.InitCons("")
 	ms := draw9.InitMouse("", disp.ScreenImage)
 
 	var pic image.Image

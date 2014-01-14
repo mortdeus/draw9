@@ -1,12 +1,12 @@
 package draw9
 
 import (
+	"bytes"
 	"io"
 	"log"
 	"os"
 	"syscall"
 	"unicode/utf8"
-	"bytes"
 )
 
 const (
@@ -131,14 +131,14 @@ const (
 
 type Kbd struct {
 	Type KbdType
-	R rune
+	R    rune
 }
 
 type Keyboardctl struct {
 	C chan Kbd
 
 	quit chan bool
-	fd *os.File
+	fd   *os.File
 }
 
 func InitKeyboard(file string) *Keyboardctl {
@@ -171,54 +171,54 @@ func (k *Keyboardctl) readproc() {
 	buf2 := make([]byte, 128)
 
 loop:
-for {
-	select {
-	case <-k.quit:
-		break loop
-	default:
-		if m, err := k.fd.Read(buf); err == nil && m > 0 {
-			var e Kbd
-			switch buf[0] {
-			case 'c':
-				r, _ := utf8.DecodeRune(buf[1:])
-				if r != utf8.RuneError {
-					e.Type = KbdChar
-					e.R = r
-					k.C <- e
-				}
-				fallthrough
-			default:
-				continue
-			case 'k':
-				s = buf[1:]
-				for utf8.FullRune(s) {
-					r, sz := utf8.DecodeRune(s)
-					s = s[sz:]
-					if bytes.IndexRune(buf2[1:], r) == -1 {
-						e.Type = KbdDown
-						e.R = r
-						k.C <- e
-					}
-				}
-			case 'K':
-				s = buf2[1:]
-				for utf8.FullRune(s) {
-					r, sz := utf8.DecodeRune(s)
-					s = s[sz:]
-					if bytes.IndexRune(buf[1:], r) == -1 {
-						e.Type = KbdUp
-						e.R = r
-						k.C <- e
-					}
-				}				
-			}
-			copy(buf2, buf)
-		} else {
-			log.Printf("Keyboardctl: %s", err)
+	for {
+		select {
+		case <-k.quit:
 			break loop
+		default:
+			if m, err := k.fd.Read(buf); err == nil && m > 0 {
+				var e Kbd
+				switch buf[0] {
+				case 'c':
+					r, _ := utf8.DecodeRune(buf[1:])
+					if r != utf8.RuneError {
+						e.Type = KbdChar
+						e.R = r
+						k.C <- e
+					}
+					fallthrough
+				default:
+					continue
+				case 'k':
+					s = buf[1:]
+					for utf8.FullRune(s) {
+						r, sz := utf8.DecodeRune(s)
+						s = s[sz:]
+						if bytes.IndexRune(buf2[1:], r) == -1 {
+							e.Type = KbdDown
+							e.R = r
+							k.C <- e
+						}
+					}
+				case 'K':
+					s = buf2[1:]
+					for utf8.FullRune(s) {
+						r, sz := utf8.DecodeRune(s)
+						s = s[sz:]
+						if bytes.IndexRune(buf[1:], r) == -1 {
+							e.Type = KbdUp
+							e.R = r
+							k.C <- e
+						}
+					}
+				}
+				copy(buf2, buf)
+			} else {
+				log.Printf("Keyboardctl: %s", err)
+				break loop
+			}
 		}
 	}
-}
 
 	close(k.C)
 }
