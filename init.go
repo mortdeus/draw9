@@ -49,8 +49,7 @@ func geninitdraw(devdir, windir, fontname, label string, ref int) (d *Display, e
 	}
 
 	if fontname == "" {
-		fname, _ := ioutil.ReadFile("/env/font") // os.Getenv("font")
-		fontname = string(fname)
+		fontname = os.Getenv("font")
 	}
 
 	var font *Font
@@ -99,8 +98,6 @@ const (
 func initdisplay(devdir, windir string) (*Display, error) {
 	var err error
 	var buf string
-	var info []byte
-	var isnew bool
 
 	if devdir == "" {
 		devdir = "/dev"
@@ -109,12 +106,13 @@ func initdisplay(devdir, windir string) (*Display, error) {
 		windir = "/dev"
 	}
 
-	info = make([]byte, 12*12)
-
 	d := &Display{
-		debug: true,
 		devdir: devdir,
 		windir: windir,
+	}
+
+	if dbg := os.Getenv("DRAWDEBUG"); dbg != "" {
+		d.debug = true
 	}
 
 	buf = devdir + "/draw/new"
@@ -129,14 +127,9 @@ func initdisplay(devdir, windir string) (*Display, error) {
 		}
 	}
 
-	n, err := io.ReadFull(d.ctlfd, info)
-	if err != nil || n < 12 {
+	info, err := d.readctl()
+	if err != nil {
 		return nil, err
-	}
-
-	isnew = false
-	if n < nINFO {
-		isnew = true
 	}
 
 	id := atoi(info[:1*12])
@@ -168,13 +161,16 @@ func initdisplay(devdir, windir string) (*Display, error) {
 		i.Clipr = ator(info[8*12:])
 	}
 
-	d._isnew = isnew
 	d.bufsize = Iounit(int(d.fd.Fd()))
 	if d.bufsize <= 0 {
 		d.bufsize = 8000
 	}
 
-	d.buf = make([]byte, 0, d.bufsize)
+	if d.bufsize < 512 {
+		return nil, fmt.Errorf("iounit too small")
+	}
+
+	d.buf = make([]byte, 0, d.bufsize+5)
 	d.Image = i
 	d.dirno = atoi(info[0*12:])
 

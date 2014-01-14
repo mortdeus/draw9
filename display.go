@@ -49,8 +49,6 @@ type Display struct {
 	// fonts
 	DefaultFont    *Font
 	DefaultSubfont *Subfont
-
-	_isnew bool
 }
 
 func (d *Display) OpenFont(name string) (*Font, error) {
@@ -175,7 +173,7 @@ func (d *Display) close() error {
 }
 
 func (d *Display) readctl() ([]byte, error) {
-	buf := make([]byte, 12*12)
+	buf := make([]byte, 12*12+1)
 	d.ctlfd.Seek(0, 0)
 	_, err := d.ctlfd.Read(buf)
 	return buf, err
