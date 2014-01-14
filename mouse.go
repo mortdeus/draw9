@@ -8,6 +8,12 @@ import (
 	"syscall"
 )
 
+type Cursor struct {
+	Offset image.Point
+	Clear  [2 * 16]byte
+	Set    [2 * 16]byte
+}
+
 type Menu struct {
 	// ???
 }
@@ -117,6 +123,19 @@ func InitMouse(file string, img *Image) *Mousectl {
 	ms.quit = make(chan bool, 1)
 	go ms.readproc()
 	return &ms
+}
+
+func (ms *Mousectl) SetCursor(c *Cursor) {
+	if c == nil {
+		ms.cfd.Write([]byte{0})
+	} else {
+		buf := make([]byte, 2*4+2*2*16)
+		bplong(buf, uint32(c.Offset.X))
+		bplong(buf[4:], uint32(c.Offset.Y))
+		copy(buf[8:], c.Clear[:])
+		copy(buf[8+2*16:], c.Set[:])
+		ms.cfd.Write(buf)
+	}
 }
 
 func (ms *Mousectl) MoveTo(pt image.Point) {
