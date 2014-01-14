@@ -6,6 +6,7 @@ import (
 	"os"
 	"syscall"
 	"unicode/utf8"
+	"bytes"
 )
 
 const (
@@ -53,7 +54,7 @@ const (
 	Kmouse  = Spec | 0x100
 )
 
-type Keyboardctl struct {
+type Consctl struct {
 	C chan rune
 
 	quit chan bool
@@ -61,56 +62,55 @@ type Keyboardctl struct {
 	ctl  *os.File
 }
 
-//func (d *Display) InitKeyboard(file string) *Keyboardctl {
-func InitKeyboard(file string) *Keyboardctl {
+func InitCons(file string) *Consctl {
 	var err error
-	var kbd Keyboardctl
+	var cons Consctl
 
 	if file == "" {
 		file = "/dev/cons"
 	}
 
-	if kbd.cons, err = os.OpenFile(file, os.O_RDWR|syscall.O_CLOEXEC, 0666); err != nil {
+	if cons.cons, err = os.OpenFile(file, os.O_RDWR|syscall.O_CLOEXEC, 0666); err != nil {
 		log.Fatal(err)
 	}
 
-	if kbd.ctl, err = os.OpenFile(file+"ctl", os.O_WRONLY|syscall.O_CLOEXEC, 0666); err != nil {
+	if cons.ctl, err = os.OpenFile(file+"ctl", os.O_WRONLY|syscall.O_CLOEXEC, 0666); err != nil {
 		log.Fatal(err)
 	}
 
-	io.WriteString(kbd.ctl, "rawon")
+	io.WriteString(cons.ctl, "rawon")
 
-	kbd.C = make(chan rune, 20)
-	kbd.quit = make(chan bool, 1)
-	go kbd.readproc()
-	return &kbd
+	cons.C = make(chan rune, 20)
+	cons.quit = make(chan bool, 1)
+	go cons.readproc()
+	return &cons
 }
 
-func (kbd *Keyboardctl) Close() {
-	io.WriteString(kbd.ctl, "rawoff")
-	close(kbd.quit)
-	kbd.ctl.Close()
-	kbd.cons.Close()
-	//	<-kbd.C
+func (cons *Consctl) Close() {
+	io.WriteString(cons.ctl, "rawoff")
+	close(cons.quit)
+	cons.ctl.Close()
+	cons.cons.Close()
+	//	<-cons.C
 }
 
-func (kbd *Keyboardctl) readproc() {
+func (cons *Consctl) readproc() {
 	buf := make([]byte, 20)
 	n := 0
 
 loop:
 	for {
 		select {
-		case <-kbd.quit:
+		case <-cons.quit:
 			break loop
 		default:
 			for n > 0 && utf8.FullRune(buf) {
 				r, size := utf8.DecodeRune(buf)
 				n -= size
 				copy(buf, buf[size:])
-				kbd.C <- r
+				cons.C <- r
 			}
-			m, err := kbd.cons.Read(buf[n:])
+			m, err := cons.cons.Read(buf[n:])
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -118,5 +118,107 @@ loop:
 		}
 	}
 
-	close(kbd.C)
+	close(cons.C)
+}
+
+type KbdType int
+
+const (
+	KbdDown KbdType = iota
+	KbdUp
+	KbdChar
+)
+
+type Kbd struct {
+	Type KbdType
+	R rune
+}
+
+type Keyboardctl struct {
+	C chan Kbd
+
+	quit chan bool
+	fd *os.File
+}
+
+func InitKeyboard(file string) *Keyboardctl {
+	var err error
+	var kbd Keyboardctl
+
+	if file == "" {
+		file = "/dev/kbd"
+	}
+
+	if kbd.fd, err = os.OpenFile(file, os.O_RDWR|syscall.O_CLOEXEC, 0666); err != nil {
+		log.Fatal(err)
+	}
+
+	kbd.C = make(chan Kbd)
+	kbd.quit = make(chan bool, 1)
+	go kbd.readproc()
+	return &kbd
+}
+
+func (k *Keyboardctl) Close() error {
+	close(k.quit)
+	return k.fd.Close()
+}
+
+func (k *Keyboardctl) readproc() {
+	var s []byte
+
+	buf := make([]byte, 128)
+	buf2 := make([]byte, 128)
+
+loop:
+for {
+	select {
+	case <-k.quit:
+		break loop
+	default:
+		if m, err := k.fd.Read(buf); err == nil && m > 0 {
+			var e Kbd
+			switch buf[0] {
+			case 'c':
+				r, _ := utf8.DecodeRune(buf[1:])
+				if r != utf8.RuneError {
+					e.Type = KbdChar
+					e.R = r
+					k.C <- e
+				}
+				fallthrough
+			default:
+				continue
+			case 'k':
+				s = buf[1:]
+				for utf8.FullRune(s) {
+					r, sz := utf8.DecodeRune(s)
+					s = s[sz:]
+					if bytes.IndexRune(buf2[1:], r) == -1 {
+						e.Type = KbdDown
+						e.R = r
+						k.C <- e
+					}
+				}
+			case 'K':
+				s = buf2[1:]
+				for utf8.FullRune(s) {
+					r, sz := utf8.DecodeRune(s)
+					s = s[sz:]
+					if bytes.IndexRune(buf[1:], r) == -1 {
+						e.Type = KbdUp
+						e.R = r
+						k.C <- e
+					}
+				}				
+			}
+			copy(buf2, buf)
+		} else {
+			log.Printf("Keyboardctl: %s", err)
+			break loop
+		}
+	}
+}
+
+	close(k.C)
 }

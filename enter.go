@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func (d *Display) Enter(ask, ans string, k *Keyboardctl, m *Mousectl) string {
+func (d *Display) Enter(ask, ans string, k *Consctl, m *Mousectl) string {
 	var err error
 	var save *Image
 
