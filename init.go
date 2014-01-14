@@ -7,11 +7,11 @@ import (
 	"image"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"strings"
 	"syscall"
-	"log"
 )
 
 const (
@@ -143,22 +143,20 @@ func initdisplay(devdir, windir string) (*Display, error) {
 		return nil, err
 	}
 
-	i := &Image{}
-
 	pix, _ := color9.ParsePix(strings.TrimSpace(string(info[2*12 : 3*12])))
 
 	if d.debug {
 		fmt.Fprintf(os.Stderr, "display pix: %s %v\n", pix, pix.Depth())
 	}
 
-	if n >= nINFO {
-		i.Display = d
-		i.ID = 0
-		i.Pix = pix
-		i.Depth = pix.Depth()
-		i.Repl = atoi(info[3*12:]) > 0
-		i.R = ator(info[4*12:])
-		i.Clipr = ator(info[8*12:])
+	i := &Image{
+		Display: d,
+		ID:      0,
+		Pix:     pix,
+		Depth:   pix.Depth(),
+		Repl:    atoi(info[3*12:]) > 0,
+		R:       ator(info[4*12:]),
+		Clipr:   ator(info[8*12:]),
 	}
 
 	d.bufsize = Iounit(int(d.fd.Fd()))

@@ -1,10 +1,10 @@
 package draw9
 
 import (
+	"bitbucket.org/mischief/draw9/color9"
 	"fmt"
 	"io"
 	"strings"
-	"bitbucket.org/mischief/draw9/color9"
 )
 
 func (d *Display) creadimage(rd io.Reader) (*Image, error) {

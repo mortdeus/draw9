@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"log"
+	"os"
 )
 
 func getsubfont(d *Display, name string) (*Subfont, error) {

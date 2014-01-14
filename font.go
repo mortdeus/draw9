@@ -4,10 +4,10 @@ import (
 	"bitbucket.org/mischief/draw9/color9"
 	"fmt"
 	"image"
+	"log"
 	"os"
 	"sync"
 	"unicode/utf8"
-	"log"
 )
 
 type Font struct {
@@ -114,7 +114,7 @@ func cachechars(f *Font, in *input, cp []uint16, max int) (n, wid int, subfontna
 
 Loop:
 	for ; i < max && !in.done; in.next() {
-println("cachechars", i<max, in.done)
+		println("cachechars", i < max, in.done)
 		r := in.ch
 		var (
 			c, tc              *cacheinfo
@@ -165,7 +165,7 @@ println("cachechars", i<max, in.done)
 		}
 
 		ld, subfontname = loadchar(f, r, c, h, i > 0)
-		log.Printf("loadchar: font %s rune %c cacheinfo %+v idx %d noflush %t = %d %q", f,r,c,h,i>0,ld, subfontname)
+		log.Printf("loadchar: font %s rune %c cacheinfo %+v idx %d noflush %t = %d %q", f, r, c, h, i > 0, ld, subfontname)
 		if ld <= 0 {
 			if ld == 0 {
 				continue Loop
