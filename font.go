@@ -114,14 +114,14 @@ func cachechars(f *Font, in *input, cp []uint16, max int) (n, wid int, subfontna
 
 Loop:
 	for ; i < max && !in.done; in.next() {
-		println("cachechars", i < max, in.done)
+		//println("cachechars", i < max, in.done)
 		r := in.ch
 		var (
 			c, tc              *cacheinfo
 			a                  uint32
 			sh, esh, h, th, ld int
 		)
-		println("LOOP", r)
+		//println("LOOP", r)
 
 		sh = (17 * int(r)) & (len(f.cache) - NFLOOK - 1)
 		esh = sh + NFLOOK
@@ -165,7 +165,9 @@ Loop:
 		}
 
 		ld, subfontname = loadchar(f, r, c, h, i > 0)
-		log.Printf("loadchar: font %s rune %c cacheinfo %+v idx %d noflush %t = %d %q", f, r, c, h, i > 0, ld, subfontname)
+		if f.Display.debug {
+			log.Printf("loadchar: font %s rune %c cacheinfo %+v idx %d noflush %t = %d %q", f, r, c, h, i > 0, ld, subfontname)
+		}
 		if ld <= 0 {
 			if ld == 0 {
 				continue Loop
@@ -175,7 +177,7 @@ Loop:
 		c = &f.cache[h]
 
 	Found:
-		println("FOUND")
+		//println("FOUND")
 		wid += int(c.width)
 		c.age = f.age
 		cp[i] = uint16(h)
